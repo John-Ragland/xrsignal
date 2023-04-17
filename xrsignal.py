@@ -167,3 +167,29 @@ def __filtfilt_chunk(da, **kwargs):
     da_filt = xr.DataArray(signal.filtfilt(b,a,da.values, axis=axis, **kwargs), dims=da.dims, coords=da.coords)
 
     return da_filt
+
+
+def __hilbert_chunk(da, **kwargs):
+
+    xc = np.abs(signal.hilbert(da.values, **kwargs))
+    xcx = xr.DataArray(xc, dims=da.dims, coords=da.coords)
+
+    return xcx
+
+
+def hilbert_mag(da, dim, **kwargs):
+    '''
+    calculate the hilbert magnitude of da
+
+    Parameters
+    ----------
+    da : xr.DataArray
+    dim : str
+        dimension over which to calculate hilbert transform
+    '''
+
+    dim_idx = list(da.dims).index(dim)
+    kwargs['axis'] = dim_idx
+    dac = da.map_blocks(__hilbert_chunk, kwargs=kwargs, template=da)
+
+    return dac
