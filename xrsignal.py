@@ -37,7 +37,7 @@ def __welch_chunk(da, dim, **kwargs):
 
     return Px
 
-def welch(da, dim, **kwargs):
+def welch(da, dim, dB=False, **kwargs):
     '''
     Estimate power spectral density using welch method
     
@@ -49,6 +49,8 @@ def welch(da, dim, **kwargs):
         data array to estimate power spectral density
     dim : str
         dimension to calculate PSD over
+    dB : bool
+        if True, return PSD in dB
     '''
 
     # Get length of PSD
@@ -114,7 +116,11 @@ def welch(da, dim, **kwargs):
 
     kwargs['dim'] = dim
     Pxx = xr.map_blocks(__welch_chunk, da, template=template,  kwargs=kwargs)
-    return Pxx
+    
+    if dB:
+        return 10*np.log10(Pxx)
+    else:
+        return Pxx
 
 def filtfilt(da, dim, b,a, **kwargs):
     '''
