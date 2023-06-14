@@ -43,6 +43,11 @@ def csd(data, dim, dB=False, **kwargs):
     else:
         fs = 1
 
+    if 'return_onesided' in kwargs:
+        return_onesided = kwargs['return_onesided']
+    else:
+        return_onesided = True
+
     # Get length of PSD
     if 'nperseg' in kwargs:
         nperseg = kwargs['nperseg']
@@ -53,7 +58,15 @@ def csd(data, dim, dB=False, **kwargs):
 
     if 'nfft' in kwargs:
         nfft = kwargs['nfft']
-        psd_len = int(nfft/2 + 1)
+        if return_onesided:
+            psd_len = int(nfft/2 + 1)
+        else:
+            psd_len = nfft
+    else: #nperseg is nfft by default
+        if return_onesided:
+            psd_len = int(nperseg/2 + 1)
+        else:
+            psd_len = nperseg
 
     # Create new dimensions of PSD object
     original_dims = list(data.dims)
@@ -104,20 +117,25 @@ def csd(data, dim, dB=False, **kwargs):
         else:
             new_chunk_sizes[item] = original_chunksize[item]
 
+    if return_onesided:
+        freq_coords = scipy.fft.rfftfreq(nperseg, 1/fs)
+    else:
+        freq_coords = scipy.fft.fftfreq(nperseg, 1/fs)
+
     template = xr.DataArray(
         dask.array.random.random(
             list(new_sizes.values()), chunks=list(new_chunk_sizes.values())),
         dims=new_dims,
-        coords={f'{dim}_frequency': scipy.fft.rfftfreq(nperseg, 1/fs)},
+        coords={f'{dim}_frequency': freq_coords},
         name=f'psd across {dim} dimension')
 
     kwargs['dim'] = dim
     Pxy = xr.map_blocks(__csd_chunk, data, template=template,  kwargs=kwargs)
 
     if dB:
-        return 10*np.log10(Pxy)
+        return (10*np.log10(Pxy)).sortby(f'{dim}_frequency')
     else:
-        return Pxy
+        return Pxy.sortby(f'{dim}_frequency')
 
 def __csd_chunk(data, dim, **kwargs):
     '''
@@ -171,11 +189,13 @@ def welch(data, dim, dB=False, **kwargs):
     '''
 
     if isinstance(data, xr.DataArray):
-        return __welch_da(data, dim, dB=dB, **kwargs)
+        Sxx = __welch_da(data, dim, dB=dB, **kwargs)
     elif isinstance(data, xr.Dataset):
-        return data.map(__welch_da, dim=dim, dB=dB, **kwargs)
+        Sxx =  data.map(__welch_da, dim=dim, dB=dB, **kwargs)
     else:
         raise Exception('data must be xr.DataArray or xr.Dataset')
+
+    return Sxx.sortby(f'{dim}_frequency')
 
 def __welch_chunk(da, dim, **kwargs):
     '''
@@ -230,17 +250,28 @@ def __welch_da(da, dim, dB=False, **kwargs):
     else:
         fs = 1
     
+    if 'return_onesided' in kwargs:
+        return_onesided = kwargs['return_onesided']
+    else:
+        return_onesided = True
+
     # Get length of PSD
     if 'nperseg' in kwargs:
         nperseg = kwargs['nperseg']
-        psd_len = int(nperseg/2 + 1)
     else:
-        psd_len = 129  # default value for signal.welch
         nperseg = 256
     
     if 'nfft' in kwargs:
         nfft = kwargs['nfft']
-        psd_len = int(nfft/2 + 1)
+        if return_onesided:
+            psd_len = int(nfft/2 + 1)
+        else:
+            psd_len = nfft
+    else: #nperseg is nfft by default
+        if return_onesided:
+            psd_len = int(nperseg/2 + 1)
+        else:
+            psd_len = nperseg
 
     # Create new dimensions of PSD object
     original_dims = list(da.dims)
@@ -287,11 +318,16 @@ def __welch_da(da, dim, dB=False, **kwargs):
         else:
             new_chunk_sizes[item] = original_chunksize[item]
 
+    if return_onesided:
+        freq_coords = scipy.fft.rfftfreq(nperseg, 1/fs)
+    else:
+        freq_coords = scipy.fft.fftfreq(nperseg, 1/fs)  
+
     template = xr.DataArray(
         dask.array.random.random(
             list(new_sizes.values()), chunks=list(new_chunk_sizes.values())),
         dims=new_dims,
-        coords={f'{dim}_frequency': scipy.fft.rfftfreq(nperseg, 1/fs)},
+        coords={f'{dim}_frequency': freq_coords},
         name=f'psd across {dim} dimension')
 
     kwargs['dim'] = dim
