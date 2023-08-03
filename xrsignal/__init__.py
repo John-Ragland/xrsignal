@@ -1,1 +1,1 @@
-from xrsignal import *
+from xrsignal.xrsignal import *
