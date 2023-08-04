@@ -8,6 +8,7 @@ env/
 
 # macOS
 .DS_Store
+.vscode
 
 # Jupyter Notebook
 .ipynb_checkpoints/

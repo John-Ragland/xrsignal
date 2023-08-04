@@ -9,10 +9,11 @@ description = 'implementing signal processing routines in scipy.signal for distr
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
-keywords = []
+keywords = ["signal processing", "distributed computing", "xarray", "dask", "scipy"]
 authors = [
   { name = "John Ragland", email = "jhrag@uw.edu" },
 ]
+
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
@@ -22,7 +23,13 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = []
+
+dependencies = [
+  "numpy",
+  "scipy",
+  "xarray",
+  "dask",
+]
 
 [project.urls]
 Documentation = "https://github.com/unknown/xrsignal#readme"
