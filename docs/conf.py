@@ -5,7 +5,7 @@ import importlib.metadata
 project = "xrsignal"
 copyright = "2023, John Ragland"
 author = "John Ragland"
-version = release = importlib.metadata.version("package")
+version = release = importlib.metadata.version("xrsignal")
 
 extensions = [
     "myst_parser",

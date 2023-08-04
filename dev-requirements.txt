@@ -1,4 +1,10 @@
 codecov
 hatch
+
+#documentation
 sphinx
 nox
+myst_parser
+sphinx_autodoc_typehints
+sphinx_copybutton
+furo
