@@ -391,13 +391,6 @@ def __filtfilt_chunk(da, **kwargs):
     return da_filt
 
 
-def __hilbert_chunk(da, **kwargs):
-
-    xc = np.abs(signal.hilbert(da.values, **kwargs))
-    xcx = xr.DataArray(xc, dims=da.dims, coords=da.coords)
-
-    return xcx
-
 
 def hilbert_mag(da, dim, **kwargs):
     '''
@@ -405,13 +398,79 @@ def hilbert_mag(da, dim, **kwargs):
 
     Parameters
     ----------
-    da : xr.DataArray
+    da : xr.DataArray, or xr.Dataset
     dim : str
         dimension over which to calculate hilbert transform
     '''
 
     dim_idx = list(da.dims).index(dim)
     kwargs['axis'] = dim_idx
-    dac = da.map_blocks(__hilbert_chunk, kwargs=kwargs, template=da)
+
+    if isinstance(da, xr.DataArray):
+        dac = __hilbert_mag_array(da, dim, **kwargs)
+    elif isinstance(da, xr.Dataset):
+        dac = da.map(__hilbert_mag_array, dim=dim, **kwargs)
 
     return dac
+
+def __hilbert_mag_array(da, dim, **kwargs):
+    '''
+    calculate hilbert transform of da
+
+    Parameters
+    ----------
+    da : xr.DataArray, or xr.Dataset
+    dim : str
+        dimension over which to calculate hilbert transform
+    '''
+    dim_idx = list(da.dims).index(dim)
+    kwargs['axis'] = dim_idx
+    dac = da.map_blocks(__hilbert_mag_chunk, kwargs=kwargs, template=da)
+    return dac
+
+def __hilbert_mag_chunk(da, **kwargs):
+    xc = np.abs(signal.hilbert(da.values, **kwargs))
+    xcx = xr.DataArray(xc, dims=da.dims, coords=da.coords)
+    return xcx
+
+
+def hilbert(da, dim, **kwargs):
+    '''
+    calculate the hilbert magnitude of da
+
+    Parameters
+    ----------
+    da : xr.DataArray, or xr.Dataset
+    dim : str
+        dimension over which to calculate hilbert transform
+    '''
+
+    dim_idx = list(da.dims).index(dim)
+    kwargs['axis'] = dim_idx
+
+    if isinstance(da, xr.DataArray):
+        dac = __hilbert_array(da, dim, **kwargs)
+    elif isinstance(da, xr.Dataset):
+        dac = da.map(__hilbert_array, dim=dim, **kwargs)
+
+    return dac
+
+def __hilbert_array(da, dim, **kwargs):
+    '''
+    calculate hilbert transform of da
+
+    Parameters
+    ----------
+    da : xr.DataArray, or xr.Dataset
+    dim : str
+        dimension over which to calculate hilbert transform
+    '''
+    dim_idx = list(da.dims).index(dim)
+    kwargs['axis'] = dim_idx
+    dac = da.map_blocks(__hilbert_chunk, kwargs=kwargs, template=da)
+    return dac
+
+def __hilbert_chunk(da, **kwargs):
+    xc = signal.hilbert(da.values, **kwargs)
+    xcx = xr.DataArray(xc, dims=da.dims, coords=da.coords)
+    return xcx
