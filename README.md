@@ -1,5 +1,7 @@
 # xrsignal
 
+[![Documentation Status](https://readthedocs.org/projects/xrsignal/badge/?version=latest)](https://xrsignal.readthedocs.io/en/latest/?badge=latest)
+
 <!-- SPHINX-START -->
 
 - The goal here is to implement scipy.signal functions using map_blocks on an as needed basis
