@@ -2,8 +2,6 @@
 
 [![Documentation Status](https://readthedocs.org/projects/xrsignal/badge/?version=latest)](https://xrsignal.readthedocs.io/en/latest/?badge=latest)
 ![unit test](https://github.com/John-Ragland/xrsignal/workflows/unit%20test/badge.svg)
-
-![example workflow](https://github.com/github/docs/actions/workflows/main.yml/badge.svg)
 <!-- SPHINX-START -->
 
 - The goal here is to implement scipy.signal functions using map_blocks on an as needed basis
