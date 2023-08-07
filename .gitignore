@@ -12,6 +12,8 @@ env/
 
 # Jupyter Notebook
 .ipynb_checkpoints/
+dev_notebooks/
+
 
 # Documentation
 docs/_build/
