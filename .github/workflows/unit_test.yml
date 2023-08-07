@@ -23,13 +23,6 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Setup micromamba
-      uses: mamba-org/provision-with-micromamba@v15
-      with:
-        environment-file: conda_envs/py${{ matrix.python-version }}.yml
-        environment-name: ${{ env.CONDA_ENV }}
-        cache-env: true
-        cache-env-key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles(format('conda_envs/py{0}.yml', matrix.python-version)) }}
     - name: Print conda env
       shell: bash -l {0}
       run: |
@@ -39,7 +32,7 @@ jobs:
       shell: bash -l {0}
       run: |
         python -m pip install pytest
-    - name: Install ooipy
+    - name: Install xrsignal
       shell: bash -l {0}
       run: |
         python -m pip install -e .
