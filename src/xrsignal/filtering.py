@@ -132,7 +132,8 @@ def __hilbert_array(da, dim, **kwargs):
     '''
     dim_idx = list(da.dims).index(dim)
     kwargs['axis'] = dim_idx
-    dac = da.map_blocks(__hilbert_chunk, kwargs=kwargs, template=da)
+    template = da.astype('complex')
+    dac = da.map_blocks(__hilbert_chunk, kwargs=kwargs, template=template)
     return dac
 
 def __hilbert_chunk(da, **kwargs):

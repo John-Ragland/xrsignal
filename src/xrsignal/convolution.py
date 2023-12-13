@@ -101,7 +101,8 @@ def correlate_da(
         dims=list(out_sizes.keys()),
         coords = out_coords,
         name='correlated data'
-    )
+    ).astype(in1.dtype)
+    
     out_template = out_template.drop_indexes(out_template.coords.keys())
     
     # chunk output template the match input template
