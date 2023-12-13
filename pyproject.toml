@@ -44,8 +44,12 @@ Documentation = "https://github.com/unknown/xrsignal#readme"
 Issues = "https://github.com/unknown/xrsignal/issues"
 Source = "https://github.com/unknown/xrsignal"
 
+[tool.hatch.build.hooks.vcs]
+version-file = "_version.py"
+
 [tool.hatch.version]
-path = "src/xrsignal/__about__.py"
+source="vcs"
+vcs="git"
 
 [tool.hatch.envs.default]
 dependencies = [
