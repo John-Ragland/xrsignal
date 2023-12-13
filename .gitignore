@@ -20,3 +20,5 @@ docs/_build/
 
 # Packaging
 _version.py
+*.whl
+*.gz
