@@ -265,6 +265,7 @@ def __welch_da(da, dim, dB=False, **kwargs):
         else:
             psd_len = nfft
     else: #nperseg is nfft by default
+        nfft = nperseg
         if return_onesided:
             psd_len = int(nperseg/2 + 1)
         else:
@@ -316,10 +317,10 @@ def __welch_da(da, dim, dB=False, **kwargs):
             new_chunk_sizes[item] = original_chunksize[item]
 
     if return_onesided:
-        freq_coords = scipy.fft.rfftfreq(nperseg, 1/fs)
+        freq_coords = scipy.fft.rfftfreq(nfft, 1/fs)
     else:
-        freq_coords = scipy.fft.fftfreq(nperseg, 1/fs)  
-
+        freq_coords = scipy.fft.fftfreq(nfft, 1/fs)  
+    
     template = xr.DataArray(
         dask.array.random.random(
             list(new_sizes.values()), chunks=list(new_chunk_sizes.values())),
