@@ -220,11 +220,8 @@ def __welch_chunk(da, dim, **kwargs):
     new_dims[original_dims.index(dim)] = f'{dim}_frequency'
     new_dims.append(dim)
 
-    print('nan post map', nan)
     # Estimate PSD and convert to xarray.DataArray
     if nan:
-        # use welch_nan if nan is True
-        print('using nan handling')
         f, P, _ = welch_nan(da.values, axis=psd_dim_idx, **kwargs)
     else:
         f, P = signal.welch(da.values, axis=psd_dim_idx, **kwargs)
@@ -344,7 +341,6 @@ def __welch_da(da, dim, dB=False, nan=False, **kwargs):
     kwargs['dim'] = dim
     kwargs['nan'] = nan
 
-    print(kwargs)
     Pxx = xr.map_blocks(__welch_chunk, da, template=template,  kwargs=kwargs)
     
     if dB:
