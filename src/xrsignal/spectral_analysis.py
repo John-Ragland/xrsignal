@@ -170,7 +170,7 @@ def __csd_chunk(data, dim, **kwargs):
     return np.abs(Pxy_x)
 
 
-def welch(data, dim, dB=False, **kwargs):
+def welch(data, dim, dB=False, nan=False, **kwargs):
     '''
     Estimate power spectral density using welch method
     For now, an integer number of chunks in PSD dimension is required
@@ -183,12 +183,14 @@ def welch(data, dim, dB=False, **kwargs):
         dimension to calculate PSD over
     dB : bool
         if True, return PSD in dB
+    nan : bool
+        if True, use welch_nan instead of welch. This throws out segments with NAN and still calculates the PSD
     '''
 
     if isinstance(data, xr.DataArray):
-        Sxx = __welch_da(data, dim, dB=dB, **kwargs)
+        Sxx = __welch_da(data, dim, dB=dB, nan=nan, **kwargs)
     elif isinstance(data, xr.Dataset):
-        Sxx =  data.map(__welch_da, dim=dim, dB=dB, **kwargs)
+        Sxx =  data.map(__welch_da, dim=dim, dB=dB, nan=nan, **kwargs)
     else:
         raise Exception('data must be xr.DataArray or xr.Dataset')
 
@@ -207,6 +209,8 @@ def __welch_chunk(da, dim, **kwargs):
     **kwargs
         passed to scipy.signal.welch
     '''
+    # unpack nan kwarg
+    nan = kwargs.pop('nan', False)
 
     # Create new dimensions of PSD object
     original_dims = list(da.dims)
@@ -216,15 +220,22 @@ def __welch_chunk(da, dim, **kwargs):
     new_dims[original_dims.index(dim)] = f'{dim}_frequency'
     new_dims.append(dim)
 
+    print('nan post map', nan)
     # Estimate PSD and convert to xarray.DataArray
-    f, P = signal.welch(da.values, axis=psd_dim_idx, **kwargs)
+    if nan:
+        # use welch_nan if nan is True
+        print('using nan handling')
+        f, P, _ = welch_nan(da.values, axis=psd_dim_idx, **kwargs)
+    else:
+        f, P = signal.welch(da.values, axis=psd_dim_idx, **kwargs)
+
     P = np.expand_dims(P, -1)
 
     Px = xr.DataArray(P, dims=new_dims, coords={f'{dim}_frequency': f})
 
     return Px
 
-def __welch_da(da, dim, dB=False, **kwargs):
+def __welch_da(da, dim, dB=False, nan=False, **kwargs):
     '''
     Estimate power spectral density using welch method
     
@@ -238,6 +249,8 @@ def __welch_da(da, dim, dB=False, **kwargs):
         dimension to calculate PSD over
     dB : bool
         if True, return PSD in dB
+    nan : bool
+        if True, use welch_nan instead of welch
     '''
 
     ## Parse Kwargs
@@ -329,9 +342,68 @@ def __welch_da(da, dim, dB=False, **kwargs):
         name=f'psd across {dim} dimension')
 
     kwargs['dim'] = dim
+    kwargs['nan'] = nan
+
+    print(kwargs)
     Pxx = xr.map_blocks(__welch_chunk, da, template=template,  kwargs=kwargs)
     
     if dB:
         return 10*np.log10(Pxx)
     else:
         return Pxx
+
+
+def welch_nan(x, fs=1.0, window='hann', nperseg=256, noverlap=None, 
+                           nfft=None, detrend='constant', return_onesided=True, 
+                           scaling='density', axis=-1, average='mean'):
+    """
+    Compute Welch's PSD estimate with NaN handling.
+    
+    This function divides data into segments, removes segments containing NaN values,
+    and then computes the PSD using only valid segments.
+    
+    Parameters are the same as scipy.signal.welch
+    
+    Returns
+    -------
+    f : ndarray
+        Array of sample frequencies.
+    Pxx : ndarray
+        Power spectral density or power spectrum of x.
+    n_valid_segments : int
+        Number of valid segments (without NaN) used in the computation.
+    """
+    # Handle default parameters similar to scipy.signal.welch
+    if noverlap is None:
+        noverlap = nperseg // 2
+        
+    # Calculate number of segments and their starting indices
+    step = nperseg - noverlap
+    indices = np.arange(0, len(x) - nperseg + 1, step)
+    
+    # Create segments and check which ones contain NaN values
+    segments = np.array([x[i:i+nperseg] for i in indices])
+    valid_segments = ~np.isnan(segments).any(axis=1)
+    
+    # Count the number of valid segments
+    n_valid_segments = np.sum(valid_segments)
+    valid_percent = n_valid_segments / len(segments)
+
+    # If no valid segments, return NaN
+    if n_valid_segments == 0:
+        f = np.fft.rfftfreq(nperseg, d=1.0/fs) if return_onesided else np.fft.fftfreq(nperseg, d=1.0/fs)
+        return f, np.full(len(f), np.nan), 0
+    
+    # Keep only valid segments
+    valid_data = segments[valid_segments]
+    
+    # Flatten into a 1D array with all valid segments concatenated
+    flattened_valid_data = valid_data.reshape(-1)
+    
+    # Call scipy.signal.welch with the valid data
+    # We set nperseg to the segment length and noverlap to 0 since we've already segmented the data
+    f, Pxx = signal.welch(flattened_valid_data, fs=fs, window=window, nperseg=nperseg, 
+                         noverlap=0, nfft=nfft, detrend=detrend, 
+                         return_onesided=return_onesided, scaling=scaling)
+    
+    return f, Pxx, valid_percent
